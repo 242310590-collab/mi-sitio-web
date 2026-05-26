@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>FitConnect</title>
+
+<style>
+
+body{
+  background:#0f172a;
+  color:white;
+  font-family:Arial;
+  margin:0;
+}
+
+header{
+  background:#111827;
+  padding:20px;
+  text-align:center;
+  border-bottom:3px solid #22c55e;
+}
+
+.container{
+  width:90%;
+  max-width:1000px;
+  margin:auto;
+}
+
+.card{
+  background:#1f2937;
+  padding:20px;
+  border-radius:20px;
+  margin-top:20px;
+}
+
+input, textarea, select{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:#374151;
+  color:white;
+}
+
+button{
+  background:#22c55e;
+  color:white;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:15px;
+  cursor:pointer;
+  width:100%;
+}
+
+.post{
+  background:#111827;
+  padding:20px;
+  border-radius:20px;
+  margin-top:20px;
+}
+
+.post img{
+  width:100%;
+  border-radius:15px;
+  margin-top:10px;
+}
+
+.profile{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  object-fit:cover;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+  <h1>FitConnect</h1>
+  <p>Red Social Fitness + TKD</p>
+</header>
+
+<div class="container">
+
+  <!-- REGISTRO -->
+
+  <div class="card">
+
+    <h2>Registro</h2>
+
+    <input type="text" id="name" placeholder="Nombre">
+
+    <input type="email" id="email" placeholder="Correo">
+
+    <input type="number" id="age" placeholder="Edad">
+
+    <input type="number" id="weight" placeholder="Peso">
+
+    <input type="number" id="height" placeholder="Estatura">
+
+    <select id="type">
+      <option>Gym</option>
+      <option>TKD</option>
+      <option>Coach</option>
+    </select>
+
+    <input type="file" id="profilePhoto">
+
+    <button onclick="registerUser()">
+      Registrarse
+    </button>
+
+  </div>
+
+  <!-- POST -->
+
+  <div class="card">
+
+    <h2>Subir Entrenamiento</h2>
+
+    <textarea id="postText"></textarea>
+
+    <input type="file" id="postPhoto">
+
+    <button onclick="createPost()">
+      Publicar
+    </button>
+
+  </div>
+
+  <!-- FEED -->
+
+  <div id="feed"></div>
+
+</div>
+
+<script>
+
+let currentUser = null;
+
+const API = "http://localhost:3000";
+
+// CONVERTIR IMAGEN BASE64
+
+function toBase64(file){
+
+  return new Promise((resolve,reject)=>{
+
+    const reader = new FileReader();
+
+    reader.readAsDataURL(file);
+
+    reader.onload = ()=> resolve(reader.result);
+
+    reader.onerror = error => reject(error);
+
+  });
+
+}
+
+// REGISTRO
+
+async function registerUser(){
+
+  const name = document.getElementById("name").value;
+
+  const email = document.getElementById("email").value;
+
+  const age = document.getElementById("age").value;
+
+  const weight = document.getElementById("weight").value;
+
+  const height = document.getElementById("height").value;
+
+  const type = document.getElementById("type").value;
+
+  const profileFile =
+  document.getElementById("profilePhoto").files[0];
+
+  const profilePhoto =
+  await toBase64(profileFile);
+
+  currentUser = {
+
+    name,
+    email,
+    age,
+    weight,
+    height,
+    type,
+    profilePhoto
+
+  };
+
+  await fetch(API + "/register",{
+
+    method:"POST",
+
+    headers:{
+      "Content-Type":"application/json"
+    },
+
+    body:JSON.stringify(currentUser)
+
+  });
+
+  alert("✅ Usuario registrado");
+
+}
+
+// CREAR POST
+
+async function createPost(){
+
+  if(currentUser == null){
+
+    alert("Debes registrarte");
+
+    return;
+
+  }
+
+  const text =
+  document.getElementById("postText").value;
+
+  const imageFile =
+  document.getElementById("postPhoto").files[0];
+
+  const image =
+  await toBase64(imageFile);
+
+  const post = {
+
+    username:currentUser.name,
+
+    profilePhoto:currentUser.profilePhoto,
+
+    text,
+
+    image,
+
+    type:currentUser.type
+
+  };
+
+  await fetch(API + "/post",{
+
+    method:"POST",
+
+    headers:{
+      "Content-Type":"application/json"
+    },
+
+    body:JSON.stringify(post)
+
+  });
+
+  loadPosts();
+
+}
+
+// CARGAR POSTS
+
+async function loadPosts(){
+
+  const response =
+  await fetch(API + "/posts");
+
+  const posts =
+  await response.json();
+
+  const feed =
+  document.getElementById("feed");
+
+  feed.innerHTML = "";
+
+  posts.forEach(post=>{
+
+    feed.innerHTML += `
+
+    <div class="post">
+
+      <img src="${post.profilephoto}"
+      class="profile">
+
+      <h3>${post.username}</h3>
+
+      <small>${post.type}</small>
+
+      <p>${post.text}</p>
+
+      <img src="${post.image}">
+
+    </div>
+
+    `;
+
+  });
+
+}
+
+loadPosts();
+
+</script>
+
+</body>
+</html>
